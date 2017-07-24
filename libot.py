@@ -5,6 +5,9 @@ from weather import weather
 from hello import hello
 import json
 import urllib2
+from datetime import datetime
+from getImageFromFlickr import li_flickr_search
+import random
 
 # starterbot's ID as an environment variable
 BOT_ID = "U62PWJXPA"
@@ -15,7 +18,7 @@ AT_BOT = "<@" + BOT_ID + ">"
 EXAMPLE_COMMAND = "do"
 
 # instantiate Slack & Twilio clients
-
+slack_client = SlackClient("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 valid_user = ["li-ha"]
 admin_user = ["li-ha"]
 command_list = ["start rds", "stop rds", "weather [location]", "my id", "channel id", "hello", "bye"]
@@ -53,6 +56,8 @@ def handle_command(command, channel):
                 print("msg: " + um[1])
                 user = um[0]
                 msg = um[1]
+                curr_time = str(datetime.now())
+                write(curr_time + " " + user + "@" + channel + " : " + msg)
             else:
             	print("invalid rtm read. Please try again")
 
@@ -99,11 +104,12 @@ def handle_command(command, channel):
         response = "Please use 'do' with the following avaliable commands " + str(command_list)
     if command[:] == "channel id":
         response = channel
-    if command[0:7] == "weather":
-    	location = command[8:]
-    	response = weather(location)
-    	if response == None:
-    		response = "Please input an existed location!"
+    if len(command) >= 9:
+        if command[0:7] == "weather":
+            location = command[8:]
+            response = weather(location)
+            if response == None:
+               response = "Please input an existed location!"
     if command[:] == "bye":
         if validate_user_command(user):
             response = "Shutting down..."
@@ -120,6 +126,20 @@ def handle_command(command, channel):
         res = urllib2.urlopen(req, json.dumps(data))
 
         response = "ok"
+    if command[:] == "cat":
+        image_url = "http://i.ytimg.com/vi/tntOCGkgt98/maxresdefault.jpg"
+        att = [{"title": "Cat",
+                "image_url": image_url}]
+        response = "cat!"
+    if len(command)>=8:
+        if command[0:6] == "search":
+            subject = command[7:]
+            rand = random.randint(0, 9)
+            image_url = li_flickr_search(subject)[rand]
+            att = [{"title": subject,
+                "image_url": image_url}]
+            response = subject
+
     if command[:] == "game":
         data = {
                 "text": "Which rds would you like to start?",
@@ -197,7 +217,10 @@ def validate_user_command(user):
 def notify_adminiser(user, command):
     return None
 
-
+def write(stuff):
+    F = open("botlog.txt", "a")
+    F.write(stuff + "\n")
+    F.close()
 
 
 def parse_slack_output(slack_rtm_output):
